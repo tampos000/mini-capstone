@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Vanilla JS Todo App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2>Task Manager</h2>
+        <button id="themeToggle" class="btn">Dark Mode</button>
+    </div>
+
+    <div class="stats-bar">
+        <span>Total: <b id="statTotal">0</b></span>
+        <span>Pending: <b id="statPending">0</b></span>
+        <span>Completed: <b id="statCompleted">0</b></span>
+    </div>
+
+    <div class="controls">
+        <input type="text" id="searchInput" placeholder="Search tasks (debounced)..." style="flex: 2;">
+        <select id="filterCategory" style="flex: 1;">
+            <option value="all">All Categories</option>
+            <option value="work">Work</option>
+            <option value="personal">Personal</option>
+            <option value="urgent">Urgent</option>
+        </select>
+    </div>
+
+    <form id="todoForm" class="todo-form">
+        <input type="text" id="taskInput" placeholder="What needs to be done?" required>
+        <select id="categoryInput">
+            <option value="work">Work</option>
+            <option value="personal">Personal</option>
+            <option value="urgent">Urgent</option>
+        </select>
+        <button type="submit" class="btn">Add</button>
+    </form>
+
+    <div id="loader" class="loader">Loading...</div>
+    <div id="todoList"></div>
+</div>
+
+<div id="notificationContainer" class="notification-container"></div>
+
+<script src="script.js" defer></script>
+</body>
+</html>
