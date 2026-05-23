@@ -1,8 +1,5 @@
 let state = {
-    tasks: [
-        { id: 1, text: "Review JavaScript Closure notes", category: "work", completed: false },
-        { id: 2, text: "Buy groceries", category: "personal", completed: true }
-    ],
+    tasks: [],
     filters: {
         searchQuery: "",
         category: "all"
