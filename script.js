@@ -1,171 +1,172 @@
-let state = {
-    tasks: [],
-    filters: {
-        searchQuery: "",
-        category: "all"
-    }
-};
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TASKS — Task Manager</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body>
 
-const todoForm = document.getElementById('todoForm');
-const taskInput = document.getElementById('taskInput');
-const categoryInput = document.getElementById('categoryInput');
-const todoList = document.getElementById('todoList');
-const searchInput = document.getElementById('searchInput');
-const filterCategory = document.getElementById('filterCategory');
-const themeToggle = document.getElementById('themeToggle');
-const loader = document.getElementById('loader');
-const notificationContainer = document.getElementById('notificationContainer');
+  <!-- Notification -->
+  <div id="notification" class="notification" role="alert" aria-live="polite"></div>
 
-function showNotification(message) {
-    const toast = document.createElement('div');
-    toast.className = 'notification';
-    toast.textContent = message;
-    notificationContainer.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-}
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-left">
+      <span class="logo-mark">✦</span>
+      <h1 class="site-title">TASKS</h1>
+    </div>
+    <div class="header-right">
+      <span id="task-counter" class="task-counter">0 tasks</span>
+      <button id="dark-mode-toggle" class="icon-btn" aria-label="Toggle dark mode" title="Toggle dark mode">
+        <span id="theme-icon">◐</span>
+      </button>
+      <button id="export-btn" class="icon-btn" aria-label="Export tasks as JSON" title="Export JSON">
+        <span>↓</span>
+      </button>
+    </div>
+  </header>
 
-async function simulateNetworkSync() {
-    loader.style.display = 'block';
-    try {
-        await new Promise((resolve, reject) => {
-            setTimeout(() => {
-                Math.random() > 0.05 ? resolve() : reject(new Error("Network Error"));
-            }, 400);
-        });
-    } catch (error) {
-        showNotification(`Sync Failed: ${error.message}`);
-    } finally {
-        loader.style.display = 'none';
-    }
-}
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div class="stat">
+      <span class="stat-num" id="stat-total">0</span>
+      <span class="stat-label">Total</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat">
+      <span class="stat-num" id="stat-pending">0</span>
+      <span class="stat-label">Pending</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat">
+      <span class="stat-num" id="stat-done">0</span>
+      <span class="stat-label">Done</span>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+    </div>
+  </div>
 
-function render() {
-    todoList.innerHTML = '';
-    
-    let filteredTasks = state.tasks.filter(task => {
-        const matchesSearch = task.text.toLowerCase().includes(state.filters.searchQuery.toLowerCase());
-        const matchesCategory = state.filters.category === 'all' || task.category === state.filters.category;
-        return matchesSearch && matchesCategory;
-    });
+  <!-- Main Layout -->
+  <main class="main-layout">
 
-    filteredTasks.forEach(task => {
-        const item = document.createElement('div');
-        item.className = `todo-item ${task.completed ? 'completed' : ''}`;
-        item.dataset.id = task.id;
+    <!-- Sidebar -->
+    <aside class="sidebar">
 
-        item.innerHTML = `
-            <span class="category-tag tag-${task.category}">${task.category.toUpperCase()}</span>
-            <span class="task-text">${task.text}</span>
-            <button class="btn btn-danger btn-delete">Delete</button>
-        `;
-        todoList.appendChild(item);
-    });
+      <!-- Add Task Form -->
+      <section class="panel" id="add-panel">
+        <h2 class="panel-title">New Task</h2>
+        <form id="task-form" novalidate>
 
-    const total = state.tasks.length;
-    const completed = state.tasks.filter(t => t.completed).length;
-    document.getElementById('statTotal').textContent = total;
-    document.getElementById('statCompleted').textContent = completed;
-    document.getElementById('statPending').textContent = total - completed;
-}
+          <div class="field-group">
+            <label class="field-label" for="task-input">Title</label>
+            <input
+              type="text"
+              id="task-input"
+              class="field-input"
+              placeholder="What needs doing?"
+              autocomplete="off"
+              maxlength="120"
+            />
+          </div>
 
-function debounce(func, delay) {
-    let timeoutId;
-    return function (...args) {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => func.apply(this, args), delay);
-    };
-}
+          <div class="field-group">
+            <label class="field-label" for="category-select">Category</label>
+            <div class="select-wrap">
+              <select id="category-select" class="field-input">
+                <option value="">Loading…</option>
+              </select>
+            </div>
+            <span id="api-status" class="api-status"></span>
+          </div>
 
-todoForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const text = taskInput.value.trim();
-    if (!text) return;
+          <div class="field-group">
+            <label class="field-label" for="priority-select">Priority</label>
+            <div class="select-wrap">
+              <select id="priority-select" class="field-input">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+          </div>
 
-    const newTask = {
-        id: Date.now(),
-        text: text,
-        category: categoryInput.value,
-        completed: false
-    };
+          <div class="field-group">
+            <label class="field-label" for="timer-input">Timer (seconds)</label>
+            <input
+              type="number"
+              id="timer-input"
+              class="field-input"
+              placeholder="e.g. 300"
+              min="1"
+              max="86400"
+            />
+          </div>
 
-    state.tasks.push(newTask);
-    taskInput.value = '';
-    
-    showNotification("Task added successfully!");
-    await simulateNetworkSync();
-    render();
-});
+          <button type="submit" class="btn-primary" id="add-btn">
+            <span>Add Task</span>
+            <span class="btn-icon">+</span>
+          </button>
 
-todoList.addEventListener('click', async (e) => {
-    const itemEl = e.target.closest('.todo-item');
-    if (!itemEl) return;
-    const taskId = parseInt(itemEl.dataset.id);
+        </form>
+      </section>
 
-    if (e.target.classList.contains('btn-delete')) {
-        state.tasks = state.tasks.filter(t => t.id !== taskId);
-        showNotification("Task deleted.");
-        await simulateNetworkSync();
-        render();
-        return;
-    }
+      <!-- Filters -->
+      <section class="panel" id="filter-panel">
+        <h2 class="panel-title">Filter</h2>
 
-    if (e.target.classList.contains('task-text')) {
-        const task = state.tasks.find(t => t.id === taskId);
-        task.completed = !task.completed;
-        showNotification(task.completed ? "Task completed!" : "Task marked pending.");
-        await simulateNetworkSync();
-        render();
-    }
-});
+        <div class="field-group">
+          <label class="field-label" for="search-input">Search</label>
+          <input
+            type="text"
+            id="search-input"
+            class="field-input"
+            placeholder="Search tasks…"
+            autocomplete="off"
+          />
+        </div>
 
-todoList.addEventListener('dblclick', (e) => {
-    if (!e.target.classList.contains('task-text')) return;
-    
-    const itemEl = e.target.closest('.todo-item');
-    const taskId = parseInt(itemEl.dataset.id);
-    const task = state.tasks.find(t => t.id === taskId);
+        <div class="field-group">
+          <label class="field-label">Category</label>
+          <div id="category-filters" class="filter-pills">
+            <button class="pill active" data-filter-cat="">All</button>
+          </div>
+        </div>
 
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.value = task.text;
-    input.className = 'edit-input';
-    
-    e.target.replaceWith(input);
-    input.focus();
+        <div class="field-group">
+          <label class="field-label">Status</label>
+          <div class="filter-pills">
+            <button class="pill active" data-filter-status="all">All</button>
+            <button class="pill" data-filter-status="pending">Pending</button>
+            <button class="pill" data-filter-status="done">Done</button>
+          </div>
+        </div>
+      </section>
 
-    const saveChanges = async () => {
-        const updatedText = input.value.trim();
-        if (updatedText && updatedText !== task.text) {
-            task.text = updatedText;
-            showNotification("Task updated.");
-            await simulateNetworkSync();
-        }
-        render();
-    };
+    </aside>
 
-    input.addEventListener('blur', saveChanges);
-    input.addEventListener('keypress', (keypressEvent) => {
-        if (keypressEvent.key === 'Enter') saveChanges();
-    });
-});
+    <!-- Task List -->
+    <section class="task-section">
+      <div id="loading-indicator" class="loading-indicator hidden">
+        <div class="spinner"></div>
+        <span>Fetching categories…</span>
+      </div>
 
-// Search and Filter Listeners
-const handleSearch = debounce((e) => {
-    state.filters.searchQuery = e.target.value;
-    render();
-}, 300);
+      <ul id="task-list" class="task-list" role="list" aria-label="Tasks">
+        <!-- Tasks rendered here -->
+      </ul>
 
-searchInput.addEventListener('input', handleSearch);
+      <div id="empty-state" class="empty-state">
+        <span class="empty-icon">◎</span>
+        <p>No tasks yet.<br/>Add one to get started.</p>
+      </div>
+    </section>
 
-filterCategory.addEventListener('change', (e) => {
-    state.filters.category = e.target.value;
-    render();
-});
+  </main>
 
-themeToggle.addEventListener('click', () => {
-    document.body.classList.toggle('dark-mode');
-    themeToggle.textContent = document.body.classList.contains('dark-mode') ? 'Light Mode' : 'Dark Mode';
-});
-
-render();
+  <script src="script.js"></script>
+</body>
+</html>
